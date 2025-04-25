@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}YTManager{% endblock %}</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="{{ url_for('static', filename='dist/main.css') }}" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col bg-gray-50">
+    <!-- Header -->
+    <header class="h-16 bg-white border-b border-gray-200">
+        <div class="h-full flex items-center justify-center">
+            <h1 class="text-2xl font-bold">HEADER</h1>
+        </div>
+    </header>
+
+    <!-- Layout Principal - Grid de 2 colunas -->
+    <main class="flex-1 grid grid-cols-2 divide-x divide-gray-200">
+        <!-- Coluna Esquerda -->
+        <div class="h-[calc(100vh-4rem)] flex flex-col">
+            <!-- Config. Avançadas -->
+            <section class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold mb-4">Config. Avançadas</h2>
+                {% block config_avancadas %}{% endblock %}
+            </section>
+            
+            <!-- VIDEOS DRAFT -->
+            <section class="flex-1 p-4 overflow-auto">
+                <h2 class="text-xl font-bold mb-4">VIDEOS DRAFT</h2>
+                {% block videos_draft %}{% endblock %}
+            </section>
+        </div>
+
+        <!-- Coluna Direita -->
+        <div class="h-[calc(100vh-4rem)] flex flex-col">
+            <!-- Playlists -->
+            <section class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold mb-4">Playlists</h2>
+                {% block playlists %}{% endblock %}
+            </section>
+
+            <!-- Container para Videos -->
+            <div class="flex-1 grid grid-rows-2">
+                <!-- Videos da Playlist -->
+                <section class="p-4 border-b border-gray-200 overflow-auto">
+                    <h2 class="text-xl font-bold mb-4">Videos da Playlist</h2>
+                    {% block playlist_videos %}{% endblock %}
+                </section>
+
+                <!-- Videos Selecionados -->
+                <section class="p-4 overflow-auto">
+                    <h2 class="text-xl font-bold mb-4">Videos Selecionados</h2>
+                    {% block selected_videos %}{% endblock %}
+                </section>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

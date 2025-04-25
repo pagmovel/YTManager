@@ -1,0 +1,115 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    width: 100%;
+    padding: 1rem;
+    background: #fff;
+    border-bottom: 2px solid #e5e7eb;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Container Principal */
+.main-container {
+    flex: 1;
+    display: flex;
+    min-height: 0; /* Importante para o scroll funcionar */
+}
+
+/* Colunas */
+.left-column,
+.right-column {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.left-column {
+    border-right: 2px solid #e5e7eb;
+}
+
+/* Seções */
+.config-section {
+    padding: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.draft-section {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.playlist-section {
+    padding: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.playlist-videos-section {
+    flex: 1;
+    padding: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+    overflow-y: auto;
+}
+
+.selected-videos-section {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+/* Títulos */
+h2 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+h3 {
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+    font-weight: bold;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+/* Videos Grid */
+.videos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.video-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}

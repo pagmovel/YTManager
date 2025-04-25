@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Vídeos - YTManager{% endblock %}
+
+{% block header_content %}
+<div class="flex justify-between items-center">
+    <div class="flex space-x-4 text-sm text-gray-600 dark:text-gray-400">
+        <span>Total de vídeos em rascunho: {{ draft_videos|length }}</span>
+        {% if selected_playlist_id %}
+            <span>Total de vídeos na playlist: {{ playlist_videos|length }}</span>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Seleção de Playlist -->
+    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Selecionar Playlist
+            </h3>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            {% block playlists %}
+            <div class="space-y-4">
+                <select name="playlist_id" 
+                        class="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">Selecione uma playlist...</option>
+                    {% for playlist in playlists %}
+                    <option value="{{ playlist.youtube_id }}" {% if selected_playlist_id == playlist.youtube_id %}selected{% endif %}>
+                        {{ playlist.title }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit" 
+                        class="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Atualizar Playlist
+                </button>
+            </div>
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Lista de Vídeos em Rascunho -->
+    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                    Vídeos em Rascunho
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Vídeos privados que podem ser adicionados à playlist
+                </p>
+            </div>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            <form id="addToPlaylistForm" method="post" action="{{ url_for('add_to_playlist') }}" class="space-y-4">
+                <input type="hidden" name="video_ids" id="selectedVideos">
+                <input type="hidden" name="playlist_id" value="{{ selected_playlist_id }}">
+                
+                <!-- Configurações de upload -->
+                {% block config_avancadas %}
+                <div x-data="{ showSettings: false }">
+                    <button @click="showSettings = !showSettings" 
+                            class="w-full flex justify-between items-center p-2 rounded-lg hover:bg-gray-100">
+                        <span class="text-gray-700">Configurações de Upload</span>
+                        <span x-text="showSettings ? '−' : '+'" class="text-gray-500"></span>
+                    </button>
+
+                    <div x-show="showSettings" 
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         class="mt-4 space-y-4">
+                        <form id="uploadSettingsForm" class="space-y-4">
+                            <!-- Vídeo para crianças -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Vídeo para crianças?
+                                </label>
+                                <select name="made_for_kids" class="mt-2 block w-full rounded-md border-gray-300">
+                                    <option value="false">Não</option>
+                                    <option value="true">Sim</option>
+                                </select>
+                            </div>
+
+                            <!-- Privacidade -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Privacidade
+                                </label>
+                                <select name="privacy_status" class="mt-2 block w-full rounded-md border-gray-300">
+                                    <option value="unlisted">Não listado</option>
+                                    <option value="private">Privado</option>
+                                    <option value="public">Público</option>
+                                </select>
+                            </div>
+
+                            <!-- Posição na playlist -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Posição na playlist
+                                </label>
+                                <select name="insert_position" class="mt-2 block w-full rounded-md border-gray-300">
+                                    <option value="end">Final da playlist</option>
+                                    <option value="start">Início da playlist</option>
+                                    <option value="after">Após vídeo específico...</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endblock %}
+
+                {% block videos_draft %}
+                <div x-data="{ selectedVideos: [] }" class="space-y-4">
+                    {% if draft_videos %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {% for video in draft_videos %}
+                        <div class="bg-white rounded-lg shadow">
+                            <label class="block cursor-pointer">
+                                <div class="relative">
+                                    <input type="checkbox" 
+                                           value="{{ video.id }}"
+                                           x-model="selectedVideos"
+                                           class="absolute top-2 left-2 z-10 rounded border-gray-300">
+                                    <img src="{{ video.snippet.thumbnails.medium.url }}" 
+                                         alt="{{ video.snippet.title }}"
+                                         class="w-full h-32 object-cover rounded-t-lg">
+                                </div>
+                                <div class="p-3">
+                                    <h4 class="font-medium text-gray-900 truncate">{{ video.snippet.title }}</h4>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ video.snippet.publishedAt|datetime }}
+                                    </p>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-gray-500">
+                        Nenhum vídeo em rascunho disponível
+                    </p>
+                    {% endif %}
+                </div>
+                {% endblock %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Vídeos na Playlist -->
+    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Vídeos na Playlist
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                Vídeos atualmente na playlist selecionada
+            </p>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            {% block playlist_videos %}
+            <div class="space-y-4">
+                {% if playlist_videos %}
+                    {% for video in playlist_videos %}
+                    <div class="flex items-center space-x-4 p-3 bg-white rounded-lg shadow">
+                        <img src="{{ video.snippet.thumbnails.default.url }}" 
+                             alt="" 
+                             class="w-20 h-auto rounded">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                                {{ video.snippet.title }}
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                Posição: {{ loop.index }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <p class="text-center text-gray-500">
+                    {% if selected_playlist_id %}
+                        Nenhum vídeo na playlist selecionada
+                    {% else %}
+                        Selecione uma playlist para ver seus vídeos
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block modal %}
+<div x-data="{ showConfirmation: false }" 
+     x-show="showConfirmation" 
+     class="fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+    
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+                            Confirmar Adição
+                        </h3>
+                        <div class="mt-2">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Tem certeza que deseja adicionar os vídeos selecionados à playlist?
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button type="button"
+                            @click="confirmAddToPlaylist"
+                            class="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:ml-3 sm:w-auto">
+                        Confirmar
+                    </button>
+                    <button type="button"
+                            @click="showConfirmation = false"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 sm:mt-0 sm:w-auto">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('videoSelection', () => ({
+        selectedVideos: [],
+        selectedVideoDetails: [],
+        showConfirmation: false,
+        
+        get hasSelectedVideos() {
+            return this.selectedVideos.length > 0;
+        },
+        
+        get selectedCountText() {
+            return `${this.selectedVideos.length} vídeos selecionados`;
+        },
+        
+        init() {
+            this.watchVideoSelections();
+        },
+        
+        watchVideoSelections() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => this.updateSelectedVideos());
+            });
+        },
+        
+        updateSelectedVideos() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            this.selectedVideos = Array.from(checkboxes).map(cb => cb.value);
+            
+            this.selectedVideoDetails = Array.from(checkboxes).map(checkbox => {
+                const card = checkbox.closest('.video-card');
+                return {
+                    id: checkbox.value,
+                    title: card.querySelector('h4').textContent,
+                    thumbnail: card.querySelector('img').src
+                };
+            });
+        },
+        
+        removeVideo(videoId) {
+            const checkbox = document.querySelector(`input[value="${videoId}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                this.updateSelectedVideos();
+            }
+        },
+        
+        addToPlaylist() {
+            this.showConfirmation = true;
+        },
+        
+        confirmAddToPlaylist() {
+            const form = document.getElementById('uploadSettingsForm');
+            const formData = new FormData(form);
+            formData.append('video_ids', this.selectedVideos.join(','));
+            formData.append('playlist_id', document.querySelector('select[name="playlist_id"]').value);
+            
+            fetch('/add_to_playlist', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Erro ao adicionar vídeos à playlist');
+                }
+            });
+            
+            this.showConfirmation = false;
+        }
+    }));
+});
+
+// Mostrar/ocultar seletor de posição após vídeo específico
+document.querySelector('select[name="insert_position"]')?.addEventListener('change', function(e) {
+    const afterVideoSelect = document.getElementById('afterVideoSelect');
+    afterVideoSelect.style.display = e.target.value === 'after' ? 'block' : 'none';
+});
+</script>
+{% endblock %}

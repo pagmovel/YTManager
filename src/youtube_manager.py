@@ -142,7 +142,7 @@ class YouTubeManager:
     def create_playlist(self, title, description=""):
         youtube = self._ensure_youtube_client()
         request = youtube.playlists().insert(
-            part="snippet,status",
+            part="snippet,status,contentDetails",
             body={
                 "snippet": {
                     "title": title,
@@ -150,6 +150,9 @@ class YouTubeManager:
                 },
                 "status": {
                     "privacyStatus": "private"
+                },
+                "contentDetails": {
+                    "sortManually": True
                 }
             }
         )
@@ -185,40 +188,98 @@ class YouTubeManager:
         """Atualiza as configurações de um vídeo."""
         youtube = self._ensure_youtube_client()
         
+        # Primeiro obtém as configurações atuais do vídeo
+        current_video = youtube.videos().list(
+            part="status",
+            id=video_id
+        ).execute()
+        
+        if not current_video.get('items'):
+            raise Exception(f"Vídeo {video_id} não encontrado")
+            
         # Prepara o body com as partes que serão atualizadas
         body = {
             "id": video_id,
-            "status": {},
-            "snippet": {}
+            "status": current_video['items'][0]['status']
         }
         
-        parts = []
-        
+        # Atualiza apenas os campos necessários
         if made_for_kids is not None:
             body["status"]["madeForKids"] = made_for_kids
-            parts.append("status")
             
         if privacy_status:
             body["status"]["privacyStatus"] = privacy_status
-            if "status" not in parts:
-                parts.append("status")
-        
-        if not parts:
-            return None  # Nada para atualizar
             
         request = youtube.videos().update(
-            part=",".join(parts),
+            part="status",  # Usando apenas a parte 'status'
             body=body
         )
         return request.execute()
 
+    def set_playlist_manual_sorting(self, playlist_id):
+        """Configura a playlist para usar ordenação manual."""
+        youtube = self._ensure_youtube_client()
+        request = youtube.playlists().update(
+            part="id,contentDetails",
+            body={
+                "id": playlist_id,
+                "contentDetails": {
+                    "sortManually": True
+                }
+            }
+        )
+        return request.execute()
+
+    def reorder_playlist_item(self, playlist_id, item_id, new_position):
+        """Reordena um item específico na playlist."""
+        youtube = self._ensure_youtube_client()
+        request = youtube.playlistItems().update(
+            part="snippet",
+            body={
+                "id": item_id,
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "position": new_position
+                }
+            }
+        )
+        return request.execute()
+        
     def add_video_to_playlist_with_settings(self, playlist_id, video_id, position=0, 
                                           made_for_kids=None, privacy_status=None):
         """Adiciona um vídeo à playlist e atualiza suas configurações."""
-        # Primeiro adiciona à playlist
-        playlist_response = self.add_video_to_playlist(playlist_id, video_id, position)
+        # Primeiro configura a playlist para ordenação manual
+        try:
+            self.set_playlist_manual_sorting(playlist_id)
+            
+            # Se estamos adicionando em uma posição específica, precisamos buscar os itens existentes
+            if position > 0:
+                existing_items = self.youtube.playlistItems().list(
+                    part="snippet",
+                    playlistId=playlist_id,
+                    maxResults=50
+                ).execute()
+                
+                # Adiciona o novo vídeo na posição desejada
+                playlist_response = self.add_video_to_playlist(playlist_id, video_id, position)
+                
+                # Reordena os itens existentes se necessário
+                if existing_items.get('items'):
+                    for idx, item in enumerate(existing_items['items']):
+                        if idx >= position:
+                            try:
+                                self.reorder_playlist_item(playlist_id, item['id'], idx + 1)
+                            except Exception as e:
+                                print(f"Aviso: Erro ao reordenar item {item['id']}: {str(e)}")
+            else:
+                # Adiciona normalmente se for no início ou fim
+                playlist_response = self.add_video_to_playlist(playlist_id, video_id, position)
+            
+        except Exception as e:
+            print(f"Aviso: Não foi possível configurar ordenação manual: {str(e)}")
+            playlist_response = self.add_video_to_playlist(playlist_id, video_id, position)
         
-        # Depois atualiza as configurações do vídeo
+        # Atualiza as configurações do vídeo
         if made_for_kids is not None or privacy_status:
             video_response = self.update_video_settings(
                 video_id, 
@@ -230,3 +291,47 @@ class YouTubeManager:
                 "video": video_response
             }
         return {"playlist": playlist_response}
+
+    def get_playlist_videos(self, playlist_id):
+        """Obtém todos os vídeos de uma playlist."""
+        youtube = self._ensure_youtube_client()
+        
+        try:
+            # Busca os vídeos da playlist
+            videos = []
+            next_page_token = None
+            
+            while True:
+                request = youtube.playlistItems().list(
+                    part="snippet,contentDetails",
+                    playlistId=playlist_id,
+                    maxResults=50,
+                    pageToken=next_page_token
+                )
+                response = request.execute()
+                
+                if not response.get('items'):
+                    break
+                    
+                # Coleta os IDs dos vídeos
+                video_ids = [item['contentDetails']['videoId'] 
+                           for item in response.get('items', [])]
+                
+                if video_ids:
+                    # Obtém detalhes completos dos vídeos
+                    videos_response = youtube.videos().list(
+                        part="snippet,status",
+                        id=','.join(video_ids)
+                    ).execute()
+                    
+                    videos.extend(videos_response.get('items', []))
+                
+                next_page_token = response.get('nextPageToken')
+                if not next_page_token:
+                    break
+            
+            return videos
+            
+        except Exception as e:
+            print(f"Erro ao buscar vídeos da playlist: {str(e)}")
+            return []

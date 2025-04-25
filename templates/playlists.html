@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Playlists - YTManager{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ isSyncing: false }">
+    <!-- Formulário para criar nova playlist -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Criar Nova Playlist</h2>
+        <form action="{{ url_for('create_playlist') }}" method="POST" class="space-y-4">
+            <div>
+                <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Título da Playlist
+                </label>
+                <input type="text" 
+                       name="title" 
+                       id="title" 
+                       required
+                       class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400">
+            </div>
+            
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Descrição
+                </label>
+                <textarea name="description" 
+                          id="description" 
+                          rows="3"
+                          class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:border-blue-400 dark:focus:ring-blue-400"></textarea>
+            </div>
+            
+            <div class="flex justify-end">
+                <button type="submit" class="btn-primary">
+                    Criar Playlist
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de Playlists -->
+    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Suas Playlists
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                Playlists vinculadas à sua conta do YouTube
+            </p>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for playlist in playlists %}
+                    <div class="relative rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-6 py-5 shadow-sm hover:border-gray-400 dark:hover:border-gray-500">
+                        <div class="flex space-x-4">
+                            <div class="flex-shrink-0">
+                                {% if playlist.thumbnail_url %}
+                                <img src="{{ playlist.thumbnail_url }}" alt="" class="h-20 w-36 object-cover rounded">
+                                {% else %}
+                                <div class="h-20 w-36 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                                    <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <a href="{{ url_for('videos', playlist_id=playlist.youtube_id) }}" class="focus:outline-none">
+                                    <span class="absolute inset-0" aria-hidden="true"></span>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ playlist.title }}
+                                    </p>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        {{ playlist.description or 'Sem descrição' }}
+                                    </p>
+                                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                                        {{ playlist.video_count or 0 }} vídeos
+                                    </p>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if not playlists %}
+                <p class="text-gray-500 dark:text-gray-400">Nenhuma playlist encontrada.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Atualizar Playlists -->
+    <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">
+                Atualizar Playlists
+            </h3>
+            <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                Sincronize suas playlists com o YouTube
+            </p>
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            <form method="post" action="{{ url_for('sync_playlists') }}" 
+                  @submit="isSyncing = true" 
+                  class="space-y-4">
+                <button type="submit" 
+                        class="inline-flex items-center justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                        :disabled="isSyncing">
+                    <svg x-show="isSyncing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-text="isSyncing ? 'Sincronizando...' : 'Sincronizar Playlists'"></span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

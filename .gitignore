@@ -8,6 +8,7 @@ database/*.db
 # Ambiente virtual
 .venv/
 env/
+node_modules/
 
 # Cache do Python
 __pycache__/
