@@ -1,0 +1,32 @@
+# Arquivos de credenciais e autenticação
+config/client_secrets.json
+config/credentials.pickle
+
+# Banco de dados
+database/*.db
+
+# Ambiente virtual
+.venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de ambiente
+.env
+.env.*
+
+# Logs
+*.log
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
